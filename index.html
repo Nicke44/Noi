@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iris is shot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #e0f7fa;
+            overflow: hidden;
+        }
+        canvas {
+            background-image: url('https://www.unibz.it/assets/Images/Services/Student-Advisors/Student-Ambassadors-2024/De-Martini-Iris__ScaleWidthWzQ1Ml0.jpg'); /* Sostituisci questa con l'immagine del nemico */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border: 2px solid #000;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: #000;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Punteggio: 0</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+
+        // Adatta la dimensione del canvas allo schermo del dispositivo
+        let canvasWidth = window.innerWidth;
+        let canvasHeight = window.innerHeight;
+
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        let bubbles = [];
+        let score = 0;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        // Funzione per generare un colore casuale
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        class Bubble {
+            constructor(x, y, radius, speed, color) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.speed = speed;
+                this.color = color;
+
+                // Calcola il vettore direzione per il movimento verso il centro
+                const dx = centerX - this.x;
+                const dy = centerY - this.y;
+                const distance = Math.hypot(dx, dy);
+                this.velocityX = (dx / distance) * this.speed;
+                this.velocityY = (dy / distance) * this.speed;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            update() {
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                this.draw();
+            }
+        }
+
+        // Funzione per generare le bolle dai bordi
+        function spawnBubble() {
+            let x, y;
+            const side = Math.floor(Math.random() * 4); // Scegli un lato a caso: 0=sopra, 1=destra, 2=sotto, 3=sinistra
+            if (side === 0) {
+                x = Math.random() * canvas.width;
+                y = -50;
+            } else if (side === 1) {
+                x = canvas.width + 50;
+                y = Math.random() * canvas.height;
+            } else if (side === 2) {
+                x = Math.random() * canvas.width;
+                y = canvas.height + 50;
+            } else {
+                x = -50;
+                y = Math.random() * canvas.height;
+            }
+
+            const radius = 15 + Math.random() * 30; // Variazione della dimensione delle bolle
+            const speed = 2 + Math.random() * 2; // Velocità variabile
+            const color = getRandomColor(); // Colore casuale
+            bubbles.push(new Bubble(x, y, radius, speed, color));
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            bubbles.forEach((bubble, index) => {
+                bubble.update();
+                // Rimuovi la bolla se raggiunge il centro
+                if (Math.hypot(centerX - bubble.x, centerY - bubble.y) < bubble.radius) {
+                    bubbles.splice(index, 1);
+                }
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function handleBubblePop(mouseX, mouseY) {
+            bubbles.forEach((bubble, index) => {
+                const dist = Math.hypot(bubble.x - mouseX, bubble.y - mouseY);
+
+                if (dist - bubble.radius < 1) {
+                    score++;
+                    scoreEl.textContent = `Punteggio: ${score}`;
+                    bubbles.splice(index, 1);
+                }
+            });
+        }
+
+        // Eventi per mouse e touch
+        canvas.addEventListener('click', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            handleBubblePop(mouseX, mouseY);
+        });
+
+        canvas.addEventListener('touchstart', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const touchX = event.touches[0].clientX - rect.left;
+            const touchY = event.touches[0].clientY - rect.top;
+            handleBubblePop(touchX, touchY);
+        });
+
+        setInterval(spawnBubble, 800); // Fa apparire una bolla ogni 800 ms
+
+        gameLoop();
+    </script>
+</body>
+</html>
